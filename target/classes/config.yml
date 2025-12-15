@@ -1,0 +1,17 @@
+tokens:
+  player-kill: 5
+  mob-kill:
+    default: 1
+    zombie: 2
+    skeleton: 2
+    creeper: 3
+
+xp:
+  player-kill: 25
+  mob-kill:
+    default: 5
+    zombie: 8
+    skeleton: 8
+    creeper: 10
+
+leveledmobs-xp-enabled: true

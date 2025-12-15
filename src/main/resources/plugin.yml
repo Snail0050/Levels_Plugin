@@ -1,0 +1,47 @@
+name: levels
+main: com.phobia.levels.LevelPlugin
+version: 0.0.1
+api-version: 1.19
+commands:
+  level:
+    description: Shows your level
+    usage: /level
+  profile:
+    description: View another player's stats
+    usage: /profile <player>
+  givetokens:
+    description: Give tokens to a player
+    usage: /givetokens <player> <amount>
+    permission: levels.givetokens
+  givexp:
+    description: Give XP to a player
+    usage: /givexp <player> <amount>
+    permission: levels.givexp
+  xpboost:
+    description: Manage or view the global XP booster.
+    usage: /xpboost
+    permission: levels.xpboost.view
+permissions:
+  levels.multiplier.1:
+    description: Gives the player a 1x XP multiplier
+    default: false
+  levels.multiplier.2:
+    description: Gives the player a 2x XP multiplier
+    default: false
+  levels.multiplier.3:
+    description: Gives the player a 3x XP multiplier
+    default: false
+  levels.multiplier.5:
+    description: Gives the player a 5x XP multiplier
+    default: false
+  levels.xpboost.view:
+    description: Allows viewing the active XP booster
+    default: true
+
+  levels.xpboost.manage:
+    description: Allows starting or stopping XP boosters
+    default: op
+
+  levels.admin:
+    description: Allows admin booster commands
+    default: op
