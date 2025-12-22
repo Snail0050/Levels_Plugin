@@ -1,13 +1,15 @@
 package com.phobia.levels.data;
 
+import org.bukkit.Bukkit; // Import the event
 import org.bukkit.Sound;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 
+import com.phobia.levels.api.PlayerLevelUpEvent;
+
 public class PlayerData {
 
     private final Player player;
-
     private int level;
     private int xp;
     private int requiredXp;
@@ -71,11 +73,6 @@ public class PlayerData {
         this.tokens += amount;
     }
 
-    /**
-     * Subtracts the specified amount of tokens.
-     * * @param amount The amount to subtract.
-     * @return True if the subtraction succeeded (player had enough tokens), false otherwise.
-     */
     public boolean removeTokens(int amount) {
         if (tokens < amount) return false;
         tokens -= amount;
@@ -92,13 +89,13 @@ public class PlayerData {
             level++;
             requiredXp = (int) (requiredXp * 1.25);
 
-            // give 25 tokens for leveling
+            // --- PATCHED: Call the event so Tab updates ---
+            Bukkit.getPluginManager().callEvent(new PlayerLevelUpEvent(player, level));
+
             this.tokens += 25;
-            // Announce to the player
             player.sendMessage("§a§lLEVEL UP! §7You are now level §b§l" + level + "§7!");
             player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
             player.sendMessage("§eYou received §625 tokens§e!");
-
         }
     }
 }

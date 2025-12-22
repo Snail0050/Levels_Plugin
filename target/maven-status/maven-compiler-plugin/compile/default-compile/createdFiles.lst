@@ -1,4 +1,5 @@
 com\phobia\levels\listeners\KillListener.class
+com\phobia\levels\api\PlayerLevelUpEvent.class
 com\phobia\levels\commands\GiveXpCommand.class
 com\phobia\levels\data\PlayerData.class
 com\phobia\levels\scoreboard\ScoreboardHandler.class
