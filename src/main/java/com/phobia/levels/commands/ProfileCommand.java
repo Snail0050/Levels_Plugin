@@ -43,7 +43,7 @@ public class ProfileCommand implements CommandExecutor {
         Player online = Bukkit.getPlayerExact(targetName);
         if (online != null) {
             PlayerData data = manager.getData(online);
-            sender.sendMessage(ChatColor.WHITE + "=== " + ChatColor.GRAY + "Profile:" + ChatColor.GOLD + online.getName() + ChatColor.WHITE + " ===");
+            //sender.sendMessage(ChatColor.WHITE + "=== " + ChatColor.GRAY + "Profile:" + ChatColor.GOLD + online.getName() + ChatColor.WHITE + " ===");
             sendProfile(sender, online.getName(), data);
             return true;
         }

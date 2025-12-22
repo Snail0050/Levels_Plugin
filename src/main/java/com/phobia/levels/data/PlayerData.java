@@ -59,21 +59,10 @@ public class PlayerData {
     public void setDeaths(int deaths) { this.deaths = deaths; }
     public void setTokens(int tokens) { this.tokens = tokens; }
 
-public void addXp(int amount) {
-
-/*StackTraceElement[] trace = Thread.currentThread().getStackTrace();
-System.out.println("---- FULL XP TRACE ----");
-for (StackTraceElement e : trace) {
-    System.out.println(e.toString());
-}
-System.out.println("------------------------");*/
-
-
-    this.xp += amount;
-    checkLevelUp();
-}
-
-
+    public void addXp(int amount) {
+        this.xp += amount;
+        checkLevelUp();
+    }
 
     public void addKill() { this.kills++; }
     public void addDeath() { this.deaths++; }
@@ -82,6 +71,11 @@ System.out.println("------------------------");*/
         this.tokens += amount;
     }
 
+    /**
+     * Subtracts the specified amount of tokens.
+     * * @param amount The amount to subtract.
+     * @return True if the subtraction succeeded (player had enough tokens), false otherwise.
+     */
     public boolean removeTokens(int amount) {
         if (tokens < amount) return false;
         tokens -= amount;
@@ -98,7 +92,7 @@ System.out.println("------------------------");*/
             level++;
             requiredXp = (int) (requiredXp * 1.25);
 
-            // give 5 tokens for leveling
+            // give 25 tokens for leveling
             this.tokens += 25;
             // Announce to the player
             player.sendMessage("§a§lLEVEL UP! §7You are now level §b§l" + level + "§7!");
