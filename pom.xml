@@ -43,6 +43,14 @@
             <version>1.19.4-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
+
+        <dependency>
+    <groupId>com.phobia</groupId>
+    <artifactId>leveledmobs</artifactId>
+    <version>1.0</version>
+    <scope>system</scope>
+    <systemPath>${project.basedir}/lib/LeveledMobs-1.0.0.jar</systemPath>
+</dependency>
     </dependencies>
 
     <build>

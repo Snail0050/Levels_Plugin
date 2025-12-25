@@ -1,139 +1,148 @@
 package com.phobia.levels.listeners;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.entity.EntityType;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.metadata.MetadataValue;
 
 import com.phobia.levels.LevelPlugin;
 import com.phobia.levels.data.PlayerData;
+import com.phobia.levels.scoreboard.PlayerBoard;
 
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 
 public class KillListener implements Listener {
 
-    // ======================================================
-    // PLAYER KILLS (Fixes the issue — always fires reliably)
-    // ======================================================
-    @EventHandler
-    public void onPlayerKill(PlayerDeathEvent event) {
+    private final Map<Integer, Set<UUID>> mobContributors = new HashMap<>();
+    private final Map<Integer, UUID> lastKiller = new HashMap<>();
 
-        Player victim = event.getEntity();
-        Player killer = victim.getKiller();
-        if (killer == null) return;  // No killer → no XP
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onEntityDamage(EntityDamageByEntityEvent event) {
+        if (!(event.getEntity() instanceof LivingEntity) || event.getEntity() instanceof Player) return;
 
-        FileConfiguration cfg = LevelPlugin.getInstance().getConfig();
+        Player damager = getDamager(event.getDamager());
+        if (damager == null) return;
 
-        PlayerData killerData = LevelPlugin.getInstance()
-            .getPlayerDataManager()
-            .getData(killer);
-
-        // record killer's kill
-        killerData.addKill();
-
-        // record victim’s death (DeathListener also does this — but harmless)
-        PlayerData victimData = LevelPlugin.getInstance()
-            .getPlayerDataManager()
-            .getData(victim);
-        victimData.addDeath();
-        LevelPlugin.getInstance().getPlayerDataManager().save(victim);
-
-        // If LeveledMobs is present → exit (LM handles XP)
-        if (Bukkit.getPluginManager().getPlugin("LeveledMobs") != null) {
-            LevelPlugin.getInstance().getPlayerDataManager().save(killer);
-            return;
-        }
-
-        // Reward values
-        int tokensAwarded = cfg.getInt("tokens.player-kill", 5);
-        int baseXp = cfg.getInt("xp.player-kill", 25);
-
-        if (tokensAwarded > 0) killerData.addTokens(tokensAwarded);
-
-        double multi = LevelPlugin.getInstance().getPlayerMultiplier(killer);
-        double global = LevelPlugin.getInstance().getGlobalBooster();
-
-        int finalXp = (int) Math.round(baseXp * multi * global);
-
-        int oldLevel = killerData.getLevel();
-        killerData.addXp(finalXp);
-
-        // Action bar
-        killer.spigot().sendMessage(
-            ChatMessageType.ACTION_BAR,
-            new TextComponent(ChatColor.GREEN + "+" + finalXp + " XP "
-            + ChatColor.AQUA + " | +" + tokensAwarded + " Tokens")
-        );
-
-        // Level up message
-        if (killerData.getLevel() > oldLevel) {
-            killer.sendMessage(ChatColor.GOLD + "⚡ LEVEL UP! You are now level "
-                    + ChatColor.YELLOW + killerData.getLevel() + ChatColor.GOLD + "!");
-        }
-
-        LevelPlugin.getInstance().getPlayerDataManager().save(killer);
+        int entityId = event.getEntity().getEntityId();
+        mobContributors.computeIfAbsent(entityId, k -> new HashSet<>()).add(damager.getUniqueId());
+        lastKiller.put(entityId, damager.getUniqueId());
     }
 
-
-
-    // ======================================================
-    // MOB KILLS (still handled on EntityDeathEvent)
-    // ======================================================
-    @EventHandler
-    public void onMobKill(EntityDeathEvent event) {
-
-        // Ignore player deaths here — handled above
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onMobDeath(EntityDeathEvent event) {
         if (event.getEntity() instanceof Player) return;
 
-        Player killer = event.getEntity().getKiller();
-        if (killer == null) return;
+        LivingEntity victim = event.getEntity();
+        int entityId = victim.getEntityId();
 
+        if (!mobContributors.containsKey(entityId)) return;
 
-        FileConfiguration cfg = LevelPlugin.getInstance().getConfig();
-        PlayerData data = LevelPlugin.getInstance().getPlayerDataManager().getData(killer);
+        Set<UUID> contributors = mobContributors.remove(entityId);
+        UUID killerUUID = lastKiller.remove(entityId);
 
-        // If LeveledMobs present → don't process fallback XP
-        if (Bukkit.getPluginManager().getPlugin("LeveledMobs") != null) {
-            LevelPlugin.getInstance().getPlayerDataManager().save(killer);
-            return;
+        if (contributors == null) return;
+
+        Player killer = (killerUUID != null) ? Bukkit.getPlayer(killerUUID) : null;
+        if (victim.getKiller() != null) killer = victim.getKiller();
+
+        // --- RETRIEVE MOB LEVEL FROM METADATA ---
+        int mobLevel = 1;
+        if (victim.hasMetadata("mob_level")) {
+            for (MetadataValue value : victim.getMetadata("mob_level")) {
+                mobLevel = value.asInt();
+                break; 
+            }
         }
 
-        EntityType type = event.getEntityType();
-        String key = type.name().toLowerCase();
+        // --- CONSOLIDATED REWARD MATH ---
+        // Killer gets exactly 1 XP per Level.
+        int finalXp = mobLevel; 
+        // Killer gets 1 token per 10 levels (Tier system).
+        int finalTokens = Math.max(1, (int) Math.ceil(mobLevel / 10.0));
 
-        int tokensAwarded = cfg.getInt("tokens.mob-kill." + key,
-                cfg.getInt("tokens.mob-kill.default", 1));
+        // 1. Reward Killer
+        if (killer != null && killer.isOnline()) {
+            reward(killer, finalTokens, finalXp, false);
+            contributors.remove(killer.getUniqueId());
+        }
 
-        int baseXp = cfg.getInt("xp.mob-kill." + key,
-                cfg.getInt("xp.mob-kill.default", 5));
+        // 2. Reward Assistants (1/3 of the killer's reward)
+        int assistTokens = Math.max(1, finalTokens / 3);
+        int assistXp = Math.max(1, finalXp / 3);
 
-        if (tokensAwarded > 0) data.addTokens(tokensAwarded);
+        for (UUID uuid : contributors) {
+            Player assistant = Bukkit.getPlayer(uuid);
+            if (assistant != null && assistant.isOnline()) {
+                reward(assistant, assistTokens, assistXp, true);
+            }
+        }
+    }
 
-        double multi = LevelPlugin.getInstance().getPlayerMultiplier(killer);
+    private void reward(Player player, int tokens, int baseXp, boolean isAssist) {
+        PlayerData data = LevelPlugin.getInstance().getPlayerDataManager().getData(player);
+        
+        if (!isAssist) data.addMobKill();
+        if (tokens > 0) data.addTokens(tokens);
+
+        // Boosters apply to the final XP payout
+        double multi = LevelPlugin.getInstance().getPlayerMultiplier(player);
         double global = LevelPlugin.getInstance().getGlobalBooster();
-
         int finalXp = (int) Math.round(baseXp * multi * global);
 
-        int oldLevel = data.getLevel();
         data.addXp(finalXp);
+        updateBoard(player);
+        LevelPlugin.getInstance().getPlayerDataManager().save(player);
 
-        killer.spigot().sendMessage(
+        String prefix = isAssist ? ChatColor.GRAY + "[Assist] " : "";
+        player.spigot().sendMessage(
             ChatMessageType.ACTION_BAR,
-            new TextComponent(ChatColor.GREEN + "+" + finalXp + " XP "
-            + ChatColor.AQUA + " | +" + tokensAwarded + " Tokens")
+            new TextComponent(prefix + ChatColor.GREEN + "+" + finalXp + " XP "
+            + ChatColor.GRAY + " |" + ChatColor.YELLOW + " +" + tokens + " Tokens")
         );
+    }
 
-        if (data.getLevel() > oldLevel) {
-            killer.sendMessage(ChatColor.GOLD + "⚡ LEVEL UP! You are now level "
-                    + ChatColor.YELLOW + data.getLevel() + ChatColor.GOLD + "!");
+    private Player getDamager(org.bukkit.entity.Entity entity) {
+        if (entity instanceof Player) return (Player) entity;
+        if (entity instanceof Projectile) {
+            Projectile p = (Projectile) entity;
+            if (p.getShooter() instanceof Player) return (Player) p.getShooter();
         }
+        return null;
+    }
 
-        LevelPlugin.getInstance().getPlayerDataManager().save(killer);
+    @EventHandler
+    public void onPlayerKill(PlayerDeathEvent event) {
+        Player victim = event.getEntity();
+        Player killer = victim.getKiller();
+
+        PlayerData victimData = LevelPlugin.getInstance().getPlayerDataManager().getData(victim);
+        victimData.addDeath();
+        updateBoard(victim);
+        LevelPlugin.getInstance().getPlayerDataManager().save(victim);
+
+        if (killer == null) return;
+
+        // Player kills give fixed rewards
+        reward(killer, 5, 25, false);
+    }
+
+    private void updateBoard(Player p) {
+        PlayerBoard board = LevelPlugin.getInstance().getScoreboardHandler().getBoard(p);
+        if (board != null) board.update();
     }
 }

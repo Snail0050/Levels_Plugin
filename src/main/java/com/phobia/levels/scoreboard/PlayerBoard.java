@@ -35,22 +35,25 @@ public class PlayerBoard {
     }
 
     private void setupTeams() {
+        // Re-indexed to accommodate Mob Kills
         createLine("level", ChatColor.BLACK.toString(), 15);
         createLine("xp", ChatColor.DARK_BLUE.toString(), 14);
         createLine("kills", ChatColor.DARK_GREEN.toString(), 13);
-        createLine("deaths", ChatColor.DARK_AQUA.toString(), 12);
-        createLine("kdr", ChatColor.DARK_RED.toString(), 11);
-        createLine("tokens", ChatColor.DARK_PURPLE.toString(), 10);
-        createLine("online", ChatColor.GOLD.toString(), 9);
+        createLine("mobkills", ChatColor.AQUA.toString(), 12); // New Line
+        createLine("deaths", ChatColor.DARK_AQUA.toString(), 11);
+        createLine("kdr", ChatColor.DARK_RED.toString(), 10);
+        createLine("tokens", ChatColor.DARK_PURPLE.toString(), 9);
+        createLine("online", ChatColor.GOLD.toString(), 8);
         
-        objective.getScore(ChatColor.RESET.toString()).setScore(8);
+        // Blank separator
+        objective.getScore(ChatColor.RESET.toString()).setScore(7);
 
-        createLine("pboost", ChatColor.GRAY.toString(), 7);
-        createLine("sboost", ChatColor.BLUE.toString(), 6);
-        createLine("timer", ChatColor.GREEN.toString(), 5);
+        createLine("pboost", ChatColor.GRAY.toString(), 6);
+        createLine("sboost", ChatColor.BLUE.toString(), 5);
+        createLine("timer", ChatColor.GREEN.toString(), 4);
 
         // Footer - Centered with spaces
-        objective.getScore(ChatColor.DARK_GRAY + "  mcguns.net  ").setScore(0);
+        objective.getScore(ChatColor.DARK_GRAY + "    mcguns.net  ").setScore(0);
     }
 
     private void createLine(String teamId, String entry, int score) {
@@ -67,10 +70,11 @@ public class PlayerBoard {
         double globalMult = LevelPlugin.getInstance().getGlobalBooster();
         long boosterTime = LevelPlugin.getInstance().getBoosterTimeRemaining();
 
-        // Update Stats
+        // Update Standard Stats
         updateTeamText("level", ChatColor.WHITE + "Level: " + ChatColor.GREEN + data.getLevel());
         updateTeamText("xp", ChatColor.WHITE + "XP: " + ChatColor.GREEN + data.getXp() + ChatColor.GRAY + "/" + ChatColor.GREEN + data.getRequiredXp());
         updateTeamText("kills", ChatColor.WHITE + "Kills: " + ChatColor.GREEN + data.getKills());
+        updateTeamText("mobkills", ChatColor.WHITE + "Mob Kills: " + ChatColor.GREEN + data.getMobKills()); // Display Mob Kills
         updateTeamText("deaths", ChatColor.WHITE + "Deaths: " + ChatColor.RED + data.getDeaths());
         
         String kdrFormatted = String.format("%.2f", data.getKdr());
@@ -79,9 +83,9 @@ public class PlayerBoard {
         updateTeamText("tokens", ChatColor.WHITE + "Tokens: " + ChatColor.YELLOW + data.getTokens());
         updateTeamText("online", ChatColor.WHITE + "Online: " + ChatColor.GREEN + Bukkit.getOnlinePlayers().size());
         
+        // Update Boosters
         updateTeamText("pboost", ChatColor.WHITE + "Your Boost: " + ChatColor.AQUA + "x" + playerMult);
 
-        // Booster Display Logic
         if (globalMult > 1.0) {
             updateTeamText("sboost", ChatColor.WHITE + "Server Boost: " + ChatColor.LIGHT_PURPLE + "x" + globalMult);
             
@@ -93,7 +97,6 @@ public class PlayerBoard {
                 updateTeamText("timer", ""); 
             }
         } else {
-            // Split the "No active booster" message across two lines
             updateTeamText("sboost", ChatColor.GRAY + "" + ChatColor.ITALIC + "*No active");
             updateTeamText("timer", ChatColor.GRAY + "" + ChatColor.ITALIC + " booster*");
         }

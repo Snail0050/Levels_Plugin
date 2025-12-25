@@ -1,6 +1,6 @@
 package com.phobia.levels.data;
 
-import org.bukkit.Bukkit; // Import the event
+import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -14,6 +14,7 @@ public class PlayerData {
     private int xp;
     private int requiredXp;
     private int kills;
+    private int mobKills; // Added Mob Kills
     private int deaths;
     private int tokens;
 
@@ -23,6 +24,7 @@ public class PlayerData {
         this.xp = 0;
         this.requiredXp = 100;
         this.kills = 0;
+        this.mobKills = 0;
         this.deaths = 0;
         this.tokens = 0;
     }
@@ -34,6 +36,7 @@ public class PlayerData {
         this.xp = config.getInt("xp", 0);
         this.requiredXp = config.getInt("requiredXp", 100);
         this.kills = config.getInt("kills", 0);
+        this.mobKills = config.getInt("mobKills", 0); // Load new stat
         this.deaths = config.getInt("deaths", 0);
         this.tokens = config.getInt("tokens", 0);
     }
@@ -43,6 +46,7 @@ public class PlayerData {
         config.set("xp", xp);
         config.set("requiredXp", requiredXp);
         config.set("kills", kills);
+        config.set("mobKills", mobKills); // Save new stat
         config.set("deaths", deaths);
         config.set("tokens", tokens);
     }
@@ -51,6 +55,7 @@ public class PlayerData {
     public int getXp() { return xp; }
     public int getRequiredXp() { return requiredXp; }
     public int getKills() { return kills; }
+    public int getMobKills() { return mobKills; } // Getter
     public int getDeaths() { return deaths; }
     public int getTokens() { return tokens; }
 
@@ -58,6 +63,7 @@ public class PlayerData {
     public void setXp(int xp) { this.xp = xp; }
     public void setRequiredXp(int requiredXp) { this.requiredXp = requiredXp; }
     public void setKills(int kills) { this.kills = kills; }
+    public void setMobKills(int mobKills) { this.mobKills = mobKills; } // Setter
     public void setDeaths(int deaths) { this.deaths = deaths; }
     public void setTokens(int tokens) { this.tokens = tokens; }
 
@@ -67,6 +73,7 @@ public class PlayerData {
     }
 
     public void addKill() { this.kills++; }
+    public void addMobKill() { this.mobKills++; } // Adder
     public void addDeath() { this.deaths++; }
 
     public void addTokens(int amount) {
@@ -79,8 +86,15 @@ public class PlayerData {
         return true;
     }
 
+    // Player Kills / Deaths
     public double getKdr() {
         return deaths == 0 ? kills : (double) kills / deaths;
+    }
+
+    // (Player Kills + Mob Kills) / Deaths
+    public double getTkdr() {
+        int totalKills = kills + mobKills;
+        return deaths == 0 ? totalKills : (double) totalKills / deaths;
     }
 
     private void checkLevelUp() {
@@ -89,7 +103,6 @@ public class PlayerData {
             level++;
             requiredXp = (int) (requiredXp * 1.25);
 
-            // --- PATCHED: Call the event so Tab updates ---
             Bukkit.getPluginManager().callEvent(new PlayerLevelUpEvent(player, level));
 
             this.tokens += 25;
