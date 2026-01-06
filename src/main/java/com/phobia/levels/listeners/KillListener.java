@@ -17,6 +17,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.MetadataValue;
 
 import com.phobia.levels.LevelPlugin;
@@ -70,9 +71,7 @@ public class KillListener implements Listener {
         }
 
         // --- CONSOLIDATED REWARD MATH ---
-        // Killer gets exactly 1 XP per Level.
         int finalXp = mobLevel; 
-        // Killer gets 1 token per 10 levels (Tier system).
         int finalTokens = Math.max(1, (int) Math.ceil(mobLevel / 10.0));
 
         // 1. Reward Killer
@@ -102,16 +101,24 @@ public class KillListener implements Listener {
         // Boosters apply to the final XP payout
         double multi = LevelPlugin.getInstance().getPlayerMultiplier(player);
         double global = LevelPlugin.getInstance().getGlobalBooster();
-        int finalXp = (int) Math.round(baseXp * multi * global);
+        
+        // --- NEW: Armor Set Multiplier ---
+        double armorMulti = isWearingFullGold(player) ? 1.5 : 1.0;
+        
+        int finalXp = (int) Math.round(baseXp * multi * global * armorMulti);
 
         data.addXp(finalXp);
         updateBoard(player);
         LevelPlugin.getInstance().getPlayerDataManager().save(player);
 
         String prefix = isAssist ? ChatColor.GRAY + "[Assist] " : "";
+        
+        // --- UPDATED: Action bar now shows if bonus is active ---
+        String bonusTag = (armorMulti > 1.0) ? ChatColor.GOLD + " (1.5x Bonus)" : "";
+        
         player.spigot().sendMessage(
             ChatMessageType.ACTION_BAR,
-            new TextComponent(prefix + ChatColor.GREEN + "+" + finalXp + " XP "
+            new TextComponent(prefix + ChatColor.GREEN + "+" + finalXp + " XP" + bonusTag
             + ChatColor.GRAY + " |" + ChatColor.YELLOW + " +" + tokens + " Tokens")
         );
     }
@@ -144,5 +151,17 @@ public class KillListener implements Listener {
     private void updateBoard(Player p) {
         PlayerBoard board = LevelPlugin.getInstance().getScoreboardHandler().getBoard(p);
         if (board != null) board.update();
+    }
+
+    // --- HELPER: Gold Armor Check ---
+    private boolean isWearingFullGold(Player player) {
+        ItemStack[] armor = player.getInventory().getArmorContents();
+        if (armor == null) return false;
+        for (ItemStack item : armor) {
+            if (item == null || !item.getType().name().startsWith("GOLDEN_")) {
+                return false;
+            }
+        }
+        return true;
     }
 }
