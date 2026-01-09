@@ -61,7 +61,6 @@ public class KillListener implements Listener {
         Player killer = (killerUUID != null) ? Bukkit.getPlayer(killerUUID) : null;
         if (victim.getKiller() != null) killer = victim.getKiller();
 
-        // --- RETRIEVE MOB LEVEL FROM METADATA ---
         int mobLevel = 1;
         if (victim.hasMetadata("mob_level")) {
             for (MetadataValue value : victim.getMetadata("mob_level")) {
@@ -70,39 +69,41 @@ public class KillListener implements Listener {
             }
         }
 
-        // --- CONSOLIDATED REWARD MATH ---
         int finalXp = mobLevel; 
         int finalTokens = Math.max(1, (int) Math.ceil(mobLevel / 10.0));
 
-        // 1. Reward Killer
         if (killer != null && killer.isOnline()) {
-            reward(killer, finalTokens, finalXp, false);
+            reward(killer, finalTokens, finalXp, false, false); // isPlayerKill = false
             contributors.remove(killer.getUniqueId());
         }
 
-        // 2. Reward Assistants (1/3 of the killer's reward)
         int assistTokens = Math.max(1, finalTokens / 3);
         int assistXp = Math.max(1, finalXp / 3);
 
         for (UUID uuid : contributors) {
             Player assistant = Bukkit.getPlayer(uuid);
             if (assistant != null && assistant.isOnline()) {
-                reward(assistant, assistTokens, assistXp, true);
+                reward(assistant, assistTokens, assistXp, true, false);
             }
         }
     }
 
-    private void reward(Player player, int tokens, int baseXp, boolean isAssist) {
+    private void reward(Player player, int tokens, int baseXp, boolean isAssist, boolean isPlayerKill) {
         PlayerData data = LevelPlugin.getInstance().getPlayerDataManager().getData(player);
         
-        if (!isAssist) data.addMobKill();
+        // --- FIXED: Distinguish between Player kills and Mob kills ---
+        if (!isAssist) {
+            if (isPlayerKill) {
+                data.addKill(); 
+            } else {
+                data.addMobKill();
+            }
+        }
+        
         if (tokens > 0) data.addTokens(tokens);
 
-        // Boosters apply to the final XP payout
         double multi = LevelPlugin.getInstance().getPlayerMultiplier(player);
         double global = LevelPlugin.getInstance().getGlobalBooster();
-        
-        // --- NEW: Armor Set Multiplier ---
         double armorMulti = isWearingFullGold(player) ? 1.5 : 1.0;
         
         int finalXp = (int) Math.round(baseXp * multi * global * armorMulti);
@@ -112,8 +113,6 @@ public class KillListener implements Listener {
         LevelPlugin.getInstance().getPlayerDataManager().save(player);
 
         String prefix = isAssist ? ChatColor.GRAY + "[Assist] " : "";
-        
-        // --- UPDATED: Action bar now shows if bonus is active ---
         String bonusTag = (armorMulti > 1.0) ? ChatColor.GOLD + " (1.5x Bonus)" : "";
         
         player.spigot().sendMessage(
@@ -144,8 +143,8 @@ public class KillListener implements Listener {
 
         if (killer == null) return;
 
-        // Player kills give fixed rewards
-        reward(killer, 5, 25, false);
+        // FIXED: Now correctly passes 'true' for a player kill
+        reward(killer, 5, 25, false, true); 
     }
 
     private void updateBoard(Player p) {
@@ -153,7 +152,6 @@ public class KillListener implements Listener {
         if (board != null) board.update();
     }
 
-    // --- HELPER: Gold Armor Check ---
     private boolean isWearingFullGold(Player player) {
         ItemStack[] armor = player.getInventory().getArmorContents();
         if (armor == null) return false;

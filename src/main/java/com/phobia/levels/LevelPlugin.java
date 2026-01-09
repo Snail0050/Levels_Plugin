@@ -10,7 +10,6 @@ import com.phobia.levels.commands.GiveXpCommand;
 import com.phobia.levels.commands.LevelCommand;
 import com.phobia.levels.commands.ProfileCommand;
 import com.phobia.levels.commands.XpBoostCommand;
-import com.phobia.levels.listeners.DeathListener;
 import com.phobia.levels.listeners.KillListener;
 import com.phobia.levels.listeners.PlayerJoinListener;
 import com.phobia.levels.listeners.PlayerQuitListener;
@@ -50,7 +49,7 @@ public class LevelPlugin extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new PlayerJoinListener(), this);
         Bukkit.getPluginManager().registerEvents(new PlayerQuitListener(), this);
         Bukkit.getPluginManager().registerEvents(new KillListener(), this);
-        getServer().getPluginManager().registerEvents(new DeathListener(), this);
+        //getServer().getPluginManager().registerEvents(new DeathListener(), this);
 
 
         // ❌ REMOVE THIS — this was causing double XP
