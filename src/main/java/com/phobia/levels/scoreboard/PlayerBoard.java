@@ -35,24 +35,21 @@ public class PlayerBoard {
     }
 
     private void setupTeams() {
-        // Re-indexed to accommodate Mob Kills
         createLine("level", ChatColor.BLACK.toString(), 15);
         createLine("xp", ChatColor.DARK_BLUE.toString(), 14);
         createLine("kills", ChatColor.DARK_GREEN.toString(), 13);
-        createLine("mobkills", ChatColor.AQUA.toString(), 12); // New Line
+        createLine("mobkills", ChatColor.AQUA.toString(), 12);
         createLine("deaths", ChatColor.DARK_AQUA.toString(), 11);
         createLine("kdr", ChatColor.DARK_RED.toString(), 10);
         createLine("tokens", ChatColor.DARK_PURPLE.toString(), 9);
         createLine("online", ChatColor.GOLD.toString(), 8);
         
-        // Blank separator
         objective.getScore(ChatColor.RESET.toString()).setScore(7);
 
         createLine("pboost", ChatColor.GRAY.toString(), 6);
         createLine("sboost", ChatColor.BLUE.toString(), 5);
         createLine("timer", ChatColor.GREEN.toString(), 4);
 
-        // Footer - Centered with spaces
         objective.getScore(ChatColor.DARK_GRAY + "    mcguns.net  ").setScore(0);
     }
 
@@ -70,11 +67,10 @@ public class PlayerBoard {
         double globalMult = LevelPlugin.getInstance().getGlobalBooster();
         long boosterTime = LevelPlugin.getInstance().getBoosterTimeRemaining();
 
-        // Update Standard Stats
         updateTeamText("level", ChatColor.WHITE + "Level: " + ChatColor.GREEN + data.getLevel());
         updateTeamText("xp", ChatColor.WHITE + "XP: " + ChatColor.GREEN + data.getXp() + ChatColor.GRAY + "/" + ChatColor.GREEN + data.getRequiredXp());
         updateTeamText("kills", ChatColor.WHITE + "Kills: " + ChatColor.GREEN + data.getKills());
-        updateTeamText("mobkills", ChatColor.WHITE + "Mob Kills: " + ChatColor.GREEN + data.getMobKills()); // Display Mob Kills
+        updateTeamText("mobkills", ChatColor.WHITE + "Mob Kills: " + ChatColor.GREEN + data.getMobKills());
         updateTeamText("deaths", ChatColor.WHITE + "Deaths: " + ChatColor.RED + data.getDeaths());
         
         String kdrFormatted = String.format("%.2f", data.getKdr());
@@ -83,7 +79,6 @@ public class PlayerBoard {
         updateTeamText("tokens", ChatColor.WHITE + "Tokens: " + ChatColor.YELLOW + data.getTokens());
         updateTeamText("online", ChatColor.WHITE + "Online: " + ChatColor.GREEN + Bukkit.getOnlinePlayers().size());
         
-        // Update Boosters
         updateTeamText("pboost", ChatColor.WHITE + "Your Boost: " + ChatColor.AQUA + "x" + playerMult);
 
         if (globalMult > 1.0) {

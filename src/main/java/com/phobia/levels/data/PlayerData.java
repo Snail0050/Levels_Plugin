@@ -29,18 +29,18 @@ public class PlayerData {
         this.tokens = 0;
     }
 
-    /**
-     * Exponential Curve Logic:
-     * This replaces the old 1.25 multiplier with a quadratic formula.
-     * Formula: 100 + (level * 50) + (level^2 * 10)
-     */
     private int calculateRequiredXp(int currentLevel) {
-        // You can tweak these numbers to make it faster or slower
         int base = 100;
         int linearScaling = currentLevel * 50;
         int exponentialScaling = (int) (Math.pow(currentLevel, 2) * 10);
-        
         return base + linearScaling + exponentialScaling;
+    }
+
+    public void resetProgress() {
+        this.level = 1;
+        this.xp = 0;
+        this.requiredXp = calculateRequiredXp(1);
+        player.sendMessage("§c§lRESET! §7An administrator has reset your levels and XP.");
     }
 
     public Player getPlayer() { return player; }
@@ -48,7 +48,6 @@ public class PlayerData {
     public void load(FileConfiguration config) {
         this.level = config.getInt("level", 1);
         this.xp = config.getInt("xp", 0);
-        // Recalculate based on loaded level to ensure consistency
         this.requiredXp = calculateRequiredXp(this.level);
         this.kills = config.getInt("kills", 0);
         this.mobKills = config.getInt("mobKills", 0);
@@ -66,7 +65,6 @@ public class PlayerData {
         config.set("tokens", tokens);
     }
 
-    // Getters and Setters
     public int getLevel() { return level; }
     public int getXp() { return xp; }
     public int getRequiredXp() { return requiredXp; }
@@ -119,8 +117,6 @@ public class PlayerData {
         while (xp >= requiredXp) {
             xp -= requiredXp;
             level++;
-            
-            // Update the requirement for the NEXT level
             requiredXp = calculateRequiredXp(level);
 
             Bukkit.getPluginManager().callEvent(new PlayerLevelUpEvent(player, level));

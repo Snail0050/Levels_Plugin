@@ -99,4 +99,15 @@ public class PlayerDataManager {
 
         return data;
     }
+
+    public void saveOfflineData(OfflinePlayer offline, PlayerData data) {
+        File file = getOfflinePlayerFile(offline);
+        FileConfiguration config = YamlConfiguration.loadConfiguration(file);
+        data.save(config);
+        try {
+            config.save(file);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }
